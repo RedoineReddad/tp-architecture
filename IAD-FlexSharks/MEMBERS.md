@@ -1,6 +1,6 @@
 Vincent THIAO-LAYEL
-Filippo PEROLO
 Houyu SHE
-Jingyang LIN
+Jingjyand LIN
 Alexandre MAZZOLA
+Filippo PEROLO
 Rédoine REDDAD
