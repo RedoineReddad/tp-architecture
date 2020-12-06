@@ -11,27 +11,6 @@ app.config["DEBUG"] = True
 # because a connection is already established elsewhere.
 dbconn = sqlite3.connect('books.db')
 
-# note to self : request.args contains GET arguments
-
-# 4 API calls :
-# - login
-# post adresse mail > get user_id
-# - get available tickets
-# returns a json list of tickets with : 
-# ticketid, départ, destination, prix
-# - book a flight
-# - ticketid, user_id
-# - get reserved by
-# /booked_tickets/username
-# ticketid, départ, dest, prix
-
-# /api/login
-# /tickets/available
-# /tickets/booked/USERNAME
-
-# ^^^^^^^^^^ hot smoking garbo ^^^^^^^^^^^
-##########################################
-
 # Login
 ##############################
 # The client sends the login email using a URL parameter (e.g.
