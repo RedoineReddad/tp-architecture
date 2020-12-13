@@ -19,7 +19,8 @@ TODO maz :
 	- DONE regen base à chaque exécution de l'api
 	- DONE ne pas remonter les available dont la date est passée
 	- DONE order by dep_time
-	- documenter comment lancer le bordel
+	- DONE documenter comment lancer le bordel
+	- DONE document de design
 	- gérer le CORS
 		instruction ; pip install flask-cors
 		https://dev.to/matheusguimaraes/fast-way-to-enable-cors-in-flask-servers-42p0
