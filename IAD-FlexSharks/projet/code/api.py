@@ -111,22 +111,18 @@ def tickets_booked():
 
     c = get_db().cursor()
 
-    query = (
+    query = ( # keep overkill request to keep format
     'SELECT * FROM ( ' # get flights' contents ; need to make a select on top in order to return all fields after the join with flights
     '    SELECT tickets.* FROM tickets ' # get tickets' contents
     '    JOIN ( '
     '        SELECT ticket_id, flight_id FROM tickets ' # get unique ids for each flight_id group
     '        WHERE tickets.buyer_id IS ? ' # do this in the innermost request, before group by
-    '        GROUP BY flight_id '
     '    ) AS t '
     '    ON tickets.ticket_id = t.ticket_id ' # join unique flight tickets with tickets on these unique ids
     ') AS test '
     'JOIN flights ON flights.flight_id = test.flight_id;')
 
     rs = c.execute(query, (request.args.get('uid'),)).fetchall() # note to self : execute expects a tuple of parameters
-
-    if c.rowcount != 1 : # Argument(s) wrong / the request doesn't modify anything
-        return unprocessable_entity(422) # WebDAV but who cares ? :D (seriously, it's the most semantically appropriate code...)
 
     return jsonify( [dict(row) for row in rs] )
 

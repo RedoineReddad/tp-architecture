@@ -8,7 +8,7 @@ Cette API propose 4 appels différents sur 4 routes distinctes :
 - `/login?email=[email]` (`GET`) : Permet de récupérer l'user id correspondant à l'`email` fourni ;
 - `/tickets/available` (`GET`) : Permet de récupérer la liste des billets disponibles et réservables (un billet par vol) ;
 - `/tickets/booked?uid=[UID]` (`GET`) : Permet de récupérer la liste des billets réservés par l'utilisateur désigné par son `UID` ;
-- `/tickets/[TID]?uid=[UID]` : Permet de réserver un billet désigné par son "ticket ID" `TID` pour l'utisateur désigné par son `UID`.
+- `/tickets/[TID]?uid=[UID]` (`PUT`) : Permet de réserver un billet désigné par son "ticket ID" `TID` pour l'utisateur désigné par son `UID`.
 
 ### Login
 - Route : `/login?email=[email]`
@@ -33,7 +33,7 @@ soumettre son mot de passe, et l'API pourrait éventuellement retourner un
 `session-id`.
 
 ##### Exemple : 
-TODO insérer image curl
+![](images/login.png)
 
 
 ### Billets réservables
@@ -58,8 +58,7 @@ caractéristiques des milliers voire millions d'autres billets pas encore
 réservés.
 
 ##### Exemple : 
-TODO insérer image curl
-
+![](images/tickets_available.png)
 
 ### Billets réservés
 - Route : `/tickets/booked?uid=[UID]`
@@ -69,6 +68,9 @@ TODO insérer image curl
 	- Nominale : 
 		- Code HTTP : 200 (OK)
 		- Corps du message : liste de billets et leurs attributs (détaillés dans l'exemple) au format JSON
+	- Aucun billet : 
+		- Code HTTP : 200 (OK)
+		- Corps du message : liste au format JSON vide (`[]`)
 	- Paramètre attendu non ou mal fourni : 
 		- Code HTTP : 400 (Bad Request)
 		- Corps du message : message d'erreur
@@ -82,8 +84,7 @@ l'utilisateur. Se référer à "Billets réservables" pour des informations sur 
 format des données.
 
 ##### Exemple : 
-TODO insérer image curl
-
+![](images/tickets_booked.png)
 
 ### Réserver un billet
 - Route : `/tickets/[TID]?uid=[UID]`
@@ -108,20 +109,20 @@ Cet appel permet de réserver un billet spécifique désigné par son ticket ID
 `TID` pour un utilsateur désigné par son `UID`.
 
 ##### Exemple : 
-TODO insérer image curl
+![](images/tickets_book.png)
 
 
 ## Format des données
 
-| Attribut        | Type                 | Description                                         |   |   |
-|-----------------|----------------------|-----------------------------------------------------|---|---|
-| `dep_code`      | Chaîne de caractères | Code IATA en 3 lettres de l'aéroport de départ      |   |   |
-| `arr_code`      | Chaîne de caractères | Code IATA en 3 lettres de l'aéroport d'arrivée      |   |   |
-| `dep_time`      | Entier               | Timestamp UNIX de la date et heure de départ du vol |   |   |
-| `buyer_id`      | Entier               | `UID` de l'utilisateur ayant réservé le billet      |   |   |
-| `ticket_id`     | Entier               | `TID` du billet                                     |   |   |
-| `flight_id`     | Entier               | Identifiant unique du vol associé au ticket         |   |   |
-| `price`         | Réel                 | Prix du billet                                      |   |   |
-| `flight_number` | Chaîne de caractères | Numéro de vol (à ne pas confondre avec `flight_id`) |   |   |
-| `seat`          | Chaîne de caractères | Siège réservé associé au billet                     |   |   |
-| `company_id`    | Entier               | Identifiant unique de la compagnie aérienne         |   |   |
+| Attribut        | Type                 | Description                                         |
+|-----------------|----------------------|-----------------------------------------------------|
+| `dep_code`      | Chaîne de caractères | Code IATA en 3 lettres de l'aéroport de départ      |
+| `arr_code`      | Chaîne de caractères | Code IATA en 3 lettres de l'aéroport d'arrivée      |
+| `dep_time`      | Entier               | Timestamp UNIX de la date et heure de départ du vol |
+| `buyer_id`      | Entier               | `UID` de l'utilisateur ayant réservé le billet      |
+| `ticket_id`     | Entier               | `TID` du billet                                     |
+| `flight_id`     | Entier               | Identifiant unique du vol associé au ticket         |
+| `price`         | Réel                 | Prix du billet                                      |
+| `flight_number` | Chaîne de caractères | Numéro de vol (à ne pas confondre avec `flight_id`) |
+| `seat`          | Chaîne de caractères | Siège réservé associé au billet                     |
+| `company_id`    | Entier               | Identifiant unique de la compagnie aérienne         |
