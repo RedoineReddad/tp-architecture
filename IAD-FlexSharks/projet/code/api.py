@@ -2,10 +2,12 @@ import os
 from datetime import datetime, date, timedelta, time
 import flask
 from flask import request, jsonify, g
+from flask_cors import CORS
 import sqlite3
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
+cors = CORS(app)
 
 ##############
 # DB-RELATED #
