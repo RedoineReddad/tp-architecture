@@ -17,3 +17,26 @@ Répartition :
 
 
 json / verbes HTTP REST
+
+sélectionner arrivée / destination / jour pour voir les billets > semlbe un poil complexe
+
+API : ne pas remonter ceux dont la date est déjà passée
+
+group tickets by date
+
+
+TODO makefile that generates flights at T+1-7 days
+
+add number of seats ?
+
+
+
+
+FILL UP DB AT API LAUNCH
+
+/tmp/test.sql
+
+TODO : document API
+
+instruction ; pip install flask-cors
+https://dev.to/matheusguimaraes/fast-way-to-enable-cors-in-flask-servers-42p0
