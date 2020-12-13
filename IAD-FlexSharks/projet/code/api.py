@@ -20,9 +20,13 @@ def get_db():
 def bad_request(e):
     return "<h1>Error 400 : Bad Request.<h1> <h3><p>Unknown or malformed API call. RTFM.</p></h3>", 400
 
+@app.errorhandler(401)
+def unauthorized(e):
+    return "<h1>Error 401 : Unauthorized.<h1>", 401
+
 @app.errorhandler(422) # WebDAV but who cares ? :D (seriously, it's the most semantically appropriate code...)
 def unprocessable_entity(e) :
-    return "<h1>Error 422 : Unprocessable entity.<h1> <h3><p>Wrong parameter.</p></h3>", 400
+    return "<h1>Error 422 : Unprocessable entity.<h1> <h3><p>Wrong parameter.</p></h3>", 422
 
 # Login
 ##############################
@@ -48,8 +52,9 @@ def login():
 
     c = get_db().cursor()
     rs = c.execute('SELECT id FROM users WHERE email=?', (request.args.get('email'),)).fetchall() # note to self : execute expects a tuple of parameters
-
-    return jsonify( [dict(row) for row in rs] )
+    
+    buf = [dict(row) for row in rs]
+    return jsonify(buf) if buf != [] else unauthorized(401)
 
 # Fetch available tickets
 ##############################
@@ -119,6 +124,9 @@ def tickets_booked():
     'JOIN flights ON flights.flight_id = test.flight_id;')
 
     rs = c.execute(query, (request.args.get('uid'),)).fetchall() # note to self : execute expects a tuple of parameters
+
+    if c.rowcount != 1 : # Argument(s) wrong / the request doesn't modify anything
+        return unprocessable_entity(422) # WebDAV but who cares ? :D (seriously, it's the most semantically appropriate code...)
 
     return jsonify( [dict(row) for row in rs] )
 
