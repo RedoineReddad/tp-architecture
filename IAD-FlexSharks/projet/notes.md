@@ -15,18 +15,11 @@ Répartition :
 	- Houyou : back
 	- Jingyang : back
 
-sélectionner arrivée / destination / jour pour voir les billets > semlbe un poil complexe
-
-API : ne pas remonter ceux dont la date est déjà passée
-
-group tickets by date
-
-
-add number of seats ?
-
-FILL UP DB AT API LAUNCH with correct dates
-
-/tmp/test.sql
-
-instruction ; pip install flask-cors
-https://dev.to/matheusguimaraes/fast-way-to-enable-cors-in-flask-servers-42p0
+TODO maz :
+	- DONE regen base à chaque exécution de l'api
+	- DONE ne pas remonter les available dont la date est passée
+	- DONE order by dep_time
+	- documenter comment lancer le bordel
+	- gérer le CORS
+		instruction ; pip install flask-cors
+		https://dev.to/matheusguimaraes/fast-way-to-enable-cors-in-flask-servers-42p0

@@ -1,9 +1,15 @@
+import os
+from datetime import datetime, date, timedelta, time
 import flask
 from flask import request, jsonify, g
 import sqlite3
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
+
+##############
+# DB-RELATED #
+##############
 
 # Using g as the application context ; we have only one connection object
 # shared between all requests in order to ensure successful concurrent API
@@ -16,6 +22,80 @@ def get_db():
         db.row_factory = sqlite3.Row
     return db
 
+@app.before_first_request
+def load_db_data():
+    # Setting things up
+    try:
+        os.remove('ticket_booking.db') # Discarding old database
+    except:
+        pass
+    c = get_db().cursor()
+
+    # Setup base structure
+    sql_string = open('db_setup.sql', "r").read()
+    c.executescript(sql_string)
+
+    # Setup data
+    sql_string = ( # Insert users
+    'INSERT INTO users VALUES(NULL, "rms@gnu.org", "Richard Matthew", "Stallman", "401b89a9e252d5c020e1f20baa458e96"); '
+    'INSERT INTO users VALUES(NULL, "tdavis@templeos.org", "Terry A.", "Davis", "4058f2a9969d9b39f7f7627b093a551a"); '
+    'INSERT INTO users VALUES(NULL, "theodore.kalinski@gmail.com", "Uncle", "Teddy", "3a7a6b85d36d1fd58f141607c9f88a22"); '
+    )
+    
+    for i in range(7) : # Add one of each flight everyday for the upcoming week
+        timestamp_8am = datetime.combine(date.today() + timedelta(days=i), time(8,0)).timestamp()
+        timestamp_2pm = datetime.combine(date.today() + timedelta(days=i), time(14,0)).timestamp()
+
+        sql_string += (
+        'INSERT INTO flights VALUES(NULL, "JFK", "CDG", '+str(int(timestamp_2pm))+', "AF4269", 1); '#-- 14:00
+        'INSERT INTO flights VALUES(NULL, "CDG", "JFK", '+str(int(timestamp_2pm))+', "AA1090", 2); '#-- 14:00
+        'INSERT INTO flights VALUES(NULL, "DTW", "JFK", '+str(int(timestamp_8am))+', "AA1488", 2); '#-- 8:00
+        'INSERT INTO flights VALUES(NULL, "JFK", "DTW", '+str(int(timestamp_2pm))+', "HH1337", 3); '#-- 14:00
+        'INSERT INTO flights VALUES(NULL, "CDG", "DTW", '+str(int(timestamp_2pm))+', "AF4201", 1); '#-- 14:00
+        'INSERT INTO flights VALUES(NULL, "DTW", "CDG", '+str(int(timestamp_8am))+', "AF4260", 1); '#-- 8:00
+        )
+    
+    sql_string += (
+        'INSERT INTO tickets VALUES(NULL, 1, 1, 420.69, "10F"); ' # JFK > CDG @14:00
+        'INSERT INTO tickets VALUES(NULL, NULL, 2, 420.69, "10E"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 2, 420.69, "10D"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 3, 239.00, "3F"); ' # DTW > JFK @8:00 (multiple tickets for the same flight)
+        'INSERT INTO tickets VALUES(NULL, 1, 3, 239.00, "3D"); '
+        'INSERT INTO tickets VALUES(NULL, 2, 3, 239.00, "3E"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 3, 239.00, "3C"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 4, 150.00, "1A"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 4, 150.00, "1B"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 4, 150.00, "1C"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 5, 150.00, "1A"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 5, 150.00, "1B"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 5, 150.00, "1C"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 6, 150.00, "1A"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 6, 150.00, "1B"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 6, 150.00, "1C"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 7, 150.00, "1A"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 8, 150.00, "1A"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 9, 150.00, "1A"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 14, 150.00, "1A"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 15, 150.00, "1A"); '
+        'INSERT INTO tickets VALUES(NULL, NULL, 16, 150.00, "1A"); '
+    )
+    # Adding an expired ticket to showcase date filtering
+    timestamp_expired = datetime.combine(date.today() + timedelta(days=-2), time(8,0)).timestamp()
+    sql_string += 'INSERT INTO flights VALUES(1337, "DTW", "CDG", '+str(int(timestamp_expired))+', "AF4260", 1); '
+    sql_string += 'INSERT INTO tickets VALUES(NULL, NULL, 1337, 150.00, "28C"); '
+
+    c.executescript(sql_string)
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
+################
+# 4xx HANDLERS #
+################
+
 @app.errorhandler(400)
 def bad_request(e):
     return "<h1>Error 400 : Bad Request.<h1> <h3><p>Unknown or malformed API call. RTFM.</p></h3>", 400
@@ -27,6 +107,10 @@ def unauthorized(e):
 @app.errorhandler(422) # WebDAV but who cares ? :D (seriously, it's the most semantically appropriate code...)
 def unprocessable_entity(e) :
     return "<h1>Error 422 : Unprocessable entity.<h1> <h3><p>Wrong parameter.</p></h3>", 422
+
+#############
+# API calls #
+#############
 
 # Login
 ##############################
@@ -72,14 +156,15 @@ def tickets_available():
     '    SELECT tickets.* FROM tickets ' # get tickets' contents
     '    JOIN ( '
     '        SELECT ticket_id, flight_id FROM tickets ' # get unique ids for each flight_id group
-    '        WHERE tickets.buyer_id IS NULL ' # do this in the innermost request, before group by
+    '        WHERE tickets.buyer_id IS NULL ' # do this in the innermost request, before group by + 
     '        GROUP BY flight_id '
     '    ) AS t '
     '    ON tickets.ticket_id = t.ticket_id ' # join unique flight tickets with tickets on these unique ids
     ') AS test '
-    'JOIN flights ON flights.flight_id = test.flight_id;')
+    'JOIN flights ON flights.flight_id = test.flight_id AND strftime(\'%s\', \'now\') - 12*60*60 < flights.dep_time ' # don't show ticket if departure is in less than 12h
+    'ORDER BY flights.dep_time ASC; ')
 
-    rs = c.execute(query).fetchall() # TODO add check date
+    rs = c.execute(query).fetchall()
 
     return jsonify( [dict(row) for row in rs] )
 
@@ -120,7 +205,8 @@ def tickets_booked():
     '    ) AS t '
     '    ON tickets.ticket_id = t.ticket_id ' # join unique flight tickets with tickets on these unique ids
     ') AS test '
-    'JOIN flights ON flights.flight_id = test.flight_id;')
+    'JOIN flights ON flights.flight_id = test.flight_id '
+    'ORDER BY flights.dep_time ASC; ')
 
     rs = c.execute(query, (request.args.get('uid'),)).fetchall() # note to self : execute expects a tuple of parameters
 
@@ -165,10 +251,9 @@ def tickets_book(tid):
 
     return "", 200 # OK
 
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+
+###########
+# Runtime #
+###########
 
 app.run()

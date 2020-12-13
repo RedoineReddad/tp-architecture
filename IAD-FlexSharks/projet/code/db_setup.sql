@@ -7,7 +7,7 @@ CREATE TABLE users(
 );
 
 CREATE TABLE flights(
-	id INTEGER PRIMARY KEY AUTOINCREMENT,  
+	flight_id INTEGER PRIMARY KEY AUTOINCREMENT,  
 	dep_code TEXT NOT NULL, -- IATA code
 	arr_code TEXT NOT NULL, -- IATA code
 	dep_time INT NOT NULL, -- stored as UNIX epoch
@@ -18,7 +18,7 @@ CREATE TABLE flights(
 CREATE TABLE tickets(
 	ticket_id INTEGER PRIMARY KEY AUTOINCREMENT, 
 	buyer_id INTEGER REFERENCES users(id), -- can be NULL as long as the ticket isn't bought by someone
-	flight_id INTEGER NOT NULL REFERENCES flights(id), 
+	flight_id INTEGER NOT NULL REFERENCES flights(flight_id), 
 	price REAL NOT NULL,
 	seat TEXT NOT NULL, -- (technically not useful in this demo)
 	UNIQUE (buyer_id, flight_id, price, seat), 
@@ -26,7 +26,7 @@ CREATE TABLE tickets(
 	CHECK(typeof(buyer_id)='integer' OR buyer_id IS NULL)
 	CHECK(typeof(flight_id)='integer')
 	FOREIGN KEY(buyer_id) REFERENCES users(id),
-	FOREIGN KEY(flight_id) REFERENCES flights(id)
+	FOREIGN KEY(flight_id) REFERENCES flights(flight_id)
 	-- TODO flights available count ?
 );
 
