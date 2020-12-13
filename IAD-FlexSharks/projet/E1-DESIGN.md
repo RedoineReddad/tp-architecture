@@ -4,7 +4,7 @@ L'application est découpée en deux parties :
 - en front-end sous la forme d'une application SPA, développé en HTML / CSS / React.js
 - un back-end qui expose une API REST (Python / Flask) et avec laquelle communique le front en HTTP. Il requête aussi une base de données SQLite.
 
-![](images/archi.jpg)
+![](images/archi.png)
 
 # Modèle de données
 
