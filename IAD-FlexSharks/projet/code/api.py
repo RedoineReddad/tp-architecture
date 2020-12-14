@@ -2,12 +2,14 @@ import os
 from datetime import datetime, date, timedelta, time
 import flask
 from flask import request, jsonify, g
-from flask_cors import CORS
 import sqlite3
+from flask_cors import CORS
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
-cors = CORS(app)
+app.config.from_object(__name__)
+
+CORS(app, resources={r'/*': {'origins': '*'}})
 
 ##############
 # DB-RELATED #
@@ -43,7 +45,7 @@ def load_db_data():
     'INSERT INTO users VALUES(NULL, "tdavis@templeos.org", "Terry A.", "Davis", "4058f2a9969d9b39f7f7627b093a551a"); '
     'INSERT INTO users VALUES(NULL, "theodore.kalinski@gmail.com", "Uncle", "Teddy", "3a7a6b85d36d1fd58f141607c9f88a22"); '
     )
-    
+
     for i in range(7) : # Add one of each flight everyday for the upcoming week
         timestamp_8am = datetime.combine(date.today() + timedelta(days=i), time(8,0)).timestamp()
         timestamp_2pm = datetime.combine(date.today() + timedelta(days=i), time(14,0)).timestamp()
@@ -56,7 +58,7 @@ def load_db_data():
         'INSERT INTO flights VALUES(NULL, "CDG", "DTW", '+str(int(timestamp_2pm))+', "AF4201", 1); '#-- 14:00
         'INSERT INTO flights VALUES(NULL, "DTW", "CDG", '+str(int(timestamp_8am))+', "AF4260", 1); '#-- 8:00
         )
-    
+
     sql_string += (
         'INSERT INTO tickets VALUES(NULL, 1, 1, 420.69, "10F"); ' # JFK > CDG @14:00
         'INSERT INTO tickets VALUES(NULL, NULL, 2, 420.69, "10E"); '
@@ -121,27 +123,36 @@ def unprocessable_entity(e) :
 # or an error string if login fails.
 # GET is used because even though we are sending user information, since
 # semantically, the intent is to "GET" a user ID.
-# 
+#
 # This API call entirely disregards any notion of security when it comes to
 # login. While a production application may be run with SSL (in which case the
 # URL parameters would be encrypted since SSL resides between the TCP and HTTP
 # layers), a more typical approach would involve getting a token (decorrelated
 # from the user name / id) or a HMAC-based mechanism, or a even a two-step
 # challenge mechanism.
-# 
+#
 # Using a URL parameter allows us to easily scale the parameters account to any
 # new authentication method.
-@app.route('/login', methods=['GET'])
-def login(): 
-    if not request.args.get('email') :
-        return bad_request(400)
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # if not request.args.get('email') :
+    #     return bad_request(400)
+    response_object = {'status': 'success'}
+    if request.method == 'POST':
+            c = get_db().cursor()
+            post_data = request.get_json()
+            print(post_data)
+            rs = c.execute('SELECT id FROM users WHERE email=?' , (post_data['email'] ,)) # note to self : execute expects a tuple of parameters
+            buf = [dict(row) for row in rs]
+            return jsonify(buf) if buf != [] else unauthorized(401)
+    else :
+        return jsonify(response_object)
 
-    c = get_db().cursor()
-    rs = c.execute('SELECT id FROM users WHERE email=?', (request.args.get('email'),)).fetchall() # note to self : execute expects a tuple of parameters
-    
-    buf = [dict(row) for row in rs]
-    return jsonify(buf) if buf != [] else unauthorized(401)
 
+
+@app.route('/ping', methods=['GET'])
+def ping_pong():
+    return jsonify('PONG!')
 # Fetch available tickets
 ##############################
 # The API call returns a JSON list of all available tickets at the current time. Most notably, it returns :
@@ -158,7 +169,7 @@ def tickets_available():
     '    SELECT tickets.* FROM tickets ' # get tickets' contents
     '    JOIN ( '
     '        SELECT ticket_id, flight_id FROM tickets ' # get unique ids for each flight_id group
-    '        WHERE tickets.buyer_id IS NULL ' # do this in the innermost request, before group by + 
+    '        WHERE tickets.buyer_id IS NULL ' # do this in the innermost request, before group by +
     '        GROUP BY flight_id '
     '    ) AS t '
     '    ON tickets.ticket_id = t.ticket_id ' # join unique flight tickets with tickets on these unique ids
@@ -168,26 +179,29 @@ def tickets_available():
 
     rs = c.execute(query).fetchall()
 
-    return jsonify( [dict(row) for row in rs] )
+    return jsonify( {
+        'status': 'success',
+        'tickets': [dict(row) for row in rs]
+    } )
 
     #return 'ticket JSON list'
 
 # Fetch booked tickets
 ##############################
 # The client sends the logged in user ID in the URL
-# The API call returns a JSON list of all booked tickets by the user specified as a URL parameter. Most notably, it returns : 
+# The API call returns a JSON list of all booked tickets by the user specified as a URL parameter. Most notably, it returns :
 # - the ticket ID
 # - the departure airport
 # - the arrival airport
 # - the ticket price
-# - the flight departure date / time (TODO ?) or status if 
-# 
+# - the flight departure date / time (TODO ?) or status if
+#
 # In a production application, we would also need some kind of authentication
 # here. Most likely, the client would pass a session token / id, which would
 # both act as an identifier and a way to verify authentication. In the case,
 # the route would probably look like '/tickets/booked?sid=[session token]'.
 @app.route('/tickets/booked', methods=['GET'])
-def tickets_booked(): 
+def tickets_booked():
     #if request.args.get('uid') # gérer absence de l'arg return page_not_found(404)
     if not request.args.get('uid') :
         return bad_request(400)
@@ -219,7 +233,7 @@ def tickets_booked():
 ##############################
 # In this case, the "PUT" verb on the '/tickets/[ticket_id]' route clearly
 # indicates the intention to modify a specific "ticket" ressource.
-# 
+#
 # Given the potentially concurrent nature of API calls, it is necessary to take
 # into account the possibility of two clients wanting to book the same ticket
 # at about that same time. In practice, client 1 and 2 would load the ticket
@@ -228,11 +242,11 @@ def tickets_booked():
 # the client that this specific ticket isn't available for purchase anymore
 # (whereupon the client would reload the list, displaying another ticket for
 # the same flight -with a different id-, or nothing if none is left).
-# 
+#
 # The same remark as above applies here about identification. We don't want
 # just any client booking tickets as other clients.
 @app.route('/tickets/<int:tid>', methods=['PUT'])
-def tickets_book(tid): 
+def tickets_book(tid):
     # Make sure the request is formed correctly and types are correct (no need to check tid, it's in the where clause and it's parsed as a route argument)
     if not request.args.get('uid') :
         return bad_request(400)
