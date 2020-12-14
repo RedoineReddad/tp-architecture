@@ -1,6 +1,5 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import Ping from '../components/Ping.vue';
 import Tickets from '../components/Tickets.vue';
 import Login from '../components/Login.vue';
 import Booked from '../components/Booked.vue';

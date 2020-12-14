@@ -22,13 +22,14 @@ export default {
   methods: {
     SignIn(payload) {
       const path = 'http://localhost:5000/login';
-      let dest = 'http://localhost:5000/booked?uid=';
+      let dest = 'http://localhost:5000/tickets/booked?uid=';
       axios.post(path, payload)
         .then((res) => {
           console.log(res.data[0].id);
-          dest += res.data[0].id
+          dest += res.data[0].id;
           // console.log(payload.email);
-          this.$router.replace({ name: 'Tickets' });
+          axios.get(dest);
+          // this.$router.replace({ name: 'Tickets' });
         })
         .catch((error) => {
           // eslint-disable-next-line
