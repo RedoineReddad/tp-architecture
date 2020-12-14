@@ -5,14 +5,14 @@ Dans ce document, nous documenterons explicitement les fonctionnalités de l'API
 ## Appels à l'API
 
 Cette API propose 4 appels différents sur 4 routes distinctes :
-- `/login?email=[email]` (`GET`) : Permet de récupérer l'user id correspondant à l'`email` fourni ;
+- `/login?email=[email]` (`GET`,`POST`) : Permet de récupérer l'user id correspondant à l'`email` fourni ;
 - `/tickets/available` (`GET`) : Permet de récupérer la liste des billets disponibles et réservables (un billet par vol) ;
 - `/tickets/booked?uid=[UID]` (`GET`) : Permet de récupérer la liste des billets réservés par l'utilisateur désigné par son `UID` ;
 - `/tickets/[TID]?uid=[UID]` (`PUT`) : Permet de réserver un billet désigné par son "ticket ID" `TID` pour l'utisateur désigné par son `UID`.
 
 ### Login
 - Route : `/login?email=[email]`
-- Méthode : `GET`
+- Méthode : `GET`,`POST`
 - Paramètre(s) à fournir : `email` (obligatoire)
 - Réponse : 
 	- Nominale : 
